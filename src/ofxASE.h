@@ -13,20 +13,25 @@
 #include "ofFileUtils.h"
 #include <stdio.h>
 
-struct NamedColor {
-    ofColor color;
-    string name;
-};
 
-struct NamedColorGroup {
-    string name;
-    std::vector<NamedColor> namedColors;
-};
 
 
 class ofxASE {
+private:
     
 public:
+    struct NamedColor {
+        ofColor color;
+        string name;
+        
+        operator ofColor() const {return color;}
+    };
+    
+    struct NamedColorGroup {
+        string name;
+        std::vector<NamedColor> namedColors;
+    };
+    
     std::vector<NamedColorGroup> namedColorGroups;
     std::vector<NamedColor> allColors;
 

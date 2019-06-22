@@ -22,10 +22,10 @@ void ofApp::draw(){
     float interval = ofGetWidth() / ((float) numberOfColors);
     
     int i = 0;
-    for(auto swatch : swatch_with_names.allColors){
-        ofSetColor(swatch.color);
+    for(auto namedColor : swatch_with_names.allColors){
+        ofSetColor(namedColor);
         ofDrawRectangle(interval * i++, 0, interval, ofGetHeight());
-        ofLogNotice("ofxASE") << swatch.name;
+        ofLogNotice("ofxASE") << namedColor.name;
     }
     
 }
