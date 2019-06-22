@@ -22,6 +22,26 @@ uint32_t readBigEndian32(char * start){
     return res;
 }
 
+Float32 readBigEndianFloat32(char * start){
+    //swap endianness on little endian systems
+    Float32 res;
+#ifdef TARGET_LITTLE_ENDIAN
+    char bytes[4];
+    memcpy(&bytes[0], start, 4 * sizeof(char));
+    std::swap(bytes[0], bytes[3]);
+    std::swap(bytes[1], bytes[2]);
+    
+    res = *((Float32 *)&bytes);
+    
+    return res;
+#endif
+    memcpy(&res, start, sizeof(Float32));
+    
+    return res;
+}
+
+
+
 uint16_t readBigEndian16(char * start){
     uint16_t res;
     memcpy(&res, start, sizeof(uint16_t));
@@ -38,6 +58,7 @@ uint16_t readBigEndian16(char * start){
 
 
 /// Load an ASE file into the ofxASE instance
+// Assuses target uses IEEE 754 floating point values
 bool ofxASE::load(const std::filesystem::path& filepath){
     ofBuffer buffer = ofBufferFromFile(filepath);
     
@@ -73,7 +94,25 @@ bool ofxASE::load(const std::filesystem::path& filepath){
             uint16_t colorNameLength = readBigEndian16(&buf[head + 6]);
             string colorName = string(&buf[head + 8], colorNameLength * 2);
             
+            int colorHead = head + 8 + (colorNameLength * 2);
             
+            switch (buf[colorHead]){
+                case 'R': //RGB
+                    swatch.color = ofColor(
+                                           readBigEndianFloat32(&buf[colorHead + 4]) * 256,
+                                           readBigEndianFloat32(&buf[colorHead + 8]) * 256,
+                                           readBigEndianFloat32(&buf[colorHead + 12])* 256);
+                    break;
+                case 'C': //CMYK
+                    ofLogError() << "CMYK not yet implimented";
+                    break;
+                case 'L': //LAB
+                    ofLogError() << "LAB not yet implimented";
+                    break;
+                case 'G': //Greyscale
+                    swatch.color = ofColor(readBigEndianFloat32(&buf[colorHead + 4]) * 256);
+                    break;
+            }
             
             swatch.name = colorName;
             
