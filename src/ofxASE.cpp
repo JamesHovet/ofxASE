@@ -7,58 +7,14 @@
 
 #include "ofxASE.h"
 
-uint32_t readBigEndian32(char * start){
-    uint32_t res;
-    memcpy(&res, start, sizeof(uint32_t));
+uint32_t readBigEndian32(char * start);
+Float32 readBigEndianFloat32(char * start);
+uint16_t readBigEndian16(char * start);
+ofColor readRGB(char * start);
+ofColor readCMYK(char * start);
 
-    //swap endianness on little endian systems
-    #ifdef TARGET_LITTLE_ENDIAN
-    return (((res & 0x000000FF) << 24) |
-            ((res & 0x0000FF00) <<  8) |
-            ((res & 0x00FF0000) >>  8) |
-            ((res & 0xFF000000) >> 24));
-    #endif
-
-    return res;
-}
-
-Float32 readBigEndianFloat32(char * start){
-    //swap endianness on little endian systems
-    Float32 res;
-#ifdef TARGET_LITTLE_ENDIAN
-    char bytes[4];
-    memcpy(&bytes[0], start, 4 * sizeof(char));
-    std::swap(bytes[0], bytes[3]);
-    std::swap(bytes[1], bytes[2]);
-    
-    res = *((Float32 *)&bytes);
-    
-    return res;
-#endif
-    memcpy(&res, start, sizeof(Float32));
-    
-    return res;
-}
-
-
-
-uint16_t readBigEndian16(char * start){
-    uint16_t res;
-    memcpy(&res, start, sizeof(uint16_t));
-    
-    //swap endianness on little endian systems
-    #ifdef TARGET_LITTLE_ENDIAN
-    return (((res & 0x00FF) << 8) |
-            ((res & 0xFF00) >> 8));
-    
-    #endif
-    
-    return res;
-}
-
-
-/// Load an ASE file into the ofxASE instance
-// Assuses target uses IEEE 754 floating point values
+/// Load an ASE file into the ofxASE instance. Multiple files can be loaded into the same instance.
+// Assuses target system uses IEEE 754 floating point values
 bool ofxASE::load(const std::filesystem::path& filepath){
     ofBuffer buffer = ofBufferFromFile(filepath);
     
@@ -78,17 +34,17 @@ bool ofxASE::load(const std::filesystem::path& filepath){
     int head = 12;
     
     while(buf[head] == '\xc0' && buf[head + 1] == '\x01'){
-        SwatchGroup swatchGroup;
+        NamedColorGroup namedColorGroup;
         
         //read group name
         uint32_t nameByteLength = readBigEndian32(&buf[head + 2]);
-        swatchGroup.name = string(&buf[head + 8], nameByteLength);
+        namedColorGroup.name = string(&buf[head + 8], nameByteLength);
 
         head += 6 + (nameByteLength);
         
         //read each color block
         while (buf[head + 1] == '\x01') {
-            Swatch swatch;
+            NamedColor namedColor;
             
             uint32_t colorBlockByteLength = readBigEndian32(&buf[head + 2]);
             uint16_t colorNameLength = readBigEndian16(&buf[head + 6]);
@@ -98,45 +54,93 @@ bool ofxASE::load(const std::filesystem::path& filepath){
             
             switch (buf[colorHead]){
                 case 'R': //RGB
-                    swatch.color = ofColor(
-                                           readBigEndianFloat32(&buf[colorHead + 4]) * 256,
-                                           readBigEndianFloat32(&buf[colorHead + 8]) * 256,
-                                           readBigEndianFloat32(&buf[colorHead + 12])* 256);
+                    namedColor.color = readRGB(&buf[colorHead + 4]);
                     break;
                 case 'C': //CMYK
-                    ofLogError() << "CMYK not yet implimented";
+                    namedColor.color = readCMYK(&buf[colorHead + 4]);
                     break;
                 case 'L': //LAB
-                    ofLogError() << "LAB not yet implimented";
+                    ofLogError() << "The LAB color space is not supported";
                     break;
                 case 'G': //Greyscale
-                    swatch.color = ofColor(readBigEndianFloat32(&buf[colorHead + 4]) * 256);
+                    namedColor.color = ofColor(readBigEndianFloat32(&buf[colorHead + 4]) * 256);
                     break;
             }
             
-            swatch.name = colorName;
+            namedColor.name = colorName;
             
-            allSwatches.push_back(swatch);
-            swatchGroup.swatches.push_back(swatch);
+            allColors.push_back(namedColor);
+            namedColorGroup.namedColors.push_back(namedColor);
             
             head += 6 + (colorBlockByteLength);
         }
         
         head += 6;
         
-        swatchGroups.push_back(swatchGroup);
+        namedColorGroups.push_back(namedColorGroup);
     }
-    
-    
-//    for(auto swatchGroup : swatchGroups){
-//        ofLogNotice() << swatchGroup.name;
-//        for(auto swatch : swatchGroup.swatches){
-//            ofLogNotice() << "|" << swatch.name;
-//        }
-//    }
-
+    return true;
 }
 
-//TODO: Actually import the colors
-//TODO: Look into the trailing ones on some of these...
+void ofxASE::clear(){
+    namedColorGroups.clear();
+    allColors.clear();
+}
+
+//Utils
+uint32_t readBigEndian32(char * start){
+    uint32_t res;
+    memcpy(&res, start, sizeof(uint32_t));
+    
+    //swap endianness on little endian systems
+#ifdef TARGET_LITTLE_ENDIAN
+    return (((res & 0x000000FF) << 24) |
+            ((res & 0x0000FF00) <<  8) |
+            ((res & 0x00FF0000) >>  8) |
+            ((res & 0xFF000000) >> 24));
+#endif
+    
+    return res;
+}
+
+Float32 readBigEndianFloat32(char * start){
+    uint32_t bytes = readBigEndian32(start);
+    Float32 res = *((Float32 *)&bytes);
+    return res;
+}
+
+uint16_t readBigEndian16(char * start){
+    uint16_t res;
+    memcpy(&res, start, sizeof(uint16_t));
+    
+    //swap endianness on little endian systems
+#ifdef TARGET_LITTLE_ENDIAN
+    return (((res & 0x00FF) << 8) |
+            ((res & 0xFF00) >> 8));
+    
+#endif
+    
+    return res;
+}
+
+ofColor readRGB(char * start){
+    return ofColor(readBigEndianFloat32(start + 0) * 255,
+                   readBigEndianFloat32(start + 4) * 255,
+                   readBigEndianFloat32(start + 8)* 255);
+}
+
+ofColor readCMYK(char * start){
+    Float32 C = readBigEndianFloat32(start + 0);
+    Float32 M = readBigEndianFloat32(start + 4);
+    Float32 Y = readBigEndianFloat32(start + 8);
+    Float32 K = readBigEndianFloat32(start + 12);
+    
+    return ofColor(255 * (1.0 - C) * (1.0 - K),
+                   255 * (1.0 - M) * (1.0 - K),
+                   255 * (1.0 - Y) * (1.0 - K));
+}
+
+//TODO: Look into the trailing ones on some of these from metal.ase...
 //TODO: Create the interface
+//TODO: Let a NamedColor be treated like an ofColor (implicit conversion?)
+

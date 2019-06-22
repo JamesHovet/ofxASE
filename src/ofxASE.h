@@ -13,23 +13,25 @@
 #include "ofFileUtils.h"
 #include <stdio.h>
 
-struct Swatch {
+struct NamedColor {
     ofColor color;
     string name;
 };
 
-struct SwatchGroup {
+struct NamedColorGroup {
     string name;
-    std::vector<Swatch> swatches;
+    std::vector<NamedColor> namedColors;
 };
 
 
 class ofxASE {
+    
 public:
-    std::vector<SwatchGroup> swatchGroups;
-    std::vector<Swatch> allSwatches;
+    std::vector<NamedColorGroup> namedColorGroups;
+    std::vector<NamedColor> allColors;
 
     bool load(const std::filesystem::path& filepath);
+    void clear();
     
 };
 

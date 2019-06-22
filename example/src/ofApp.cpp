@@ -3,8 +3,8 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
 
-    swatch_without_names.load("swatches/AdobeColor New York Sunset.ase");
-    swatch_with_names.load("swatches/Metal.ase");
+    swatch_with_names.load("swatches/Groton.ase");
+    swatch_with_names.load("swatches/Grays.ase");
     
     
     
@@ -18,15 +18,15 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-    int numberOfColors = swatch_without_names.allSwatches.size();
+    int numberOfColors = swatch_with_names.allColors.size();
     float interval = ofGetWidth() / ((float) numberOfColors);
     
     int i = 0;
-    for(auto swatch : swatch_without_names.allSwatches){
+    for(auto swatch : swatch_with_names.allColors){
         ofSetColor(swatch.color);
         ofDrawRectangle(interval * i++, 0, interval, ofGetHeight());
+        ofLogNotice("ofxASE") << swatch.name;
     }
-    
     
 }
 
