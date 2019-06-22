@@ -10,15 +10,10 @@
 #define ofxASE_hpp
 
 #include "ofMain.h"
-#include "ofFileUtils.h"
-#include <stdio.h>
-
-
+#include "ofFileUtils.h" //needed for ofBuffer
 
 
 class ofxASE {
-private:
-    
 public:
     struct NamedColor {
         ofColor color;
@@ -32,11 +27,20 @@ public:
         std::vector<NamedColor> namedColors;
     };
     
-    std::vector<NamedColorGroup> namedColorGroups;
-    std::vector<NamedColor> allColors;
-
+    ofxASE();
+    ofxASE(std::filesystem::path& filepath);
+    
     bool load(const std::filesystem::path& filepath);
     void clear();
+    std::vector<NamedColorGroup> getGroups() const {return namedColorGroups;}
+    std::vector<NamedColor> getAllColors() const {return allColors;}
+    
+private:
+    
+    std::vector<NamedColorGroup> namedColorGroups;
+    std::vector<NamedColor> allColors;
+    
+
     
 };
 

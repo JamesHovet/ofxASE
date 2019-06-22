@@ -6,8 +6,6 @@ void ofApp::setup(){
     swatch_with_names.load("swatches/Groton.ase");
     swatch_with_names.load("swatches/Grays.ase");
     
-    
-    
 }
 
 //--------------------------------------------------------------
@@ -18,14 +16,13 @@ void ofApp::update(){
 //--------------------------------------------------------------
 void ofApp::draw(){
 
-    int numberOfColors = swatch_with_names.allColors.size();
+    int numberOfColors = swatch_with_names.getAllColors().size();
     float interval = ofGetWidth() / ((float) numberOfColors);
     
     int i = 0;
-    for(auto namedColor : swatch_with_names.allColors){
+    for(auto namedColor : swatch_with_names.getAllColors()){
         ofSetColor(namedColor);
         ofDrawRectangle(interval * i++, 0, interval, ofGetHeight());
-        ofLogNotice("ofxASE") << namedColor.name;
     }
     
 }
