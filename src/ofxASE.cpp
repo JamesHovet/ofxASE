@@ -7,12 +7,6 @@
 
 #include "ofxASE.h"
 
-uint32_t readBigEndian32(char * start);
-Float32 readBigEndianFloat32(char * start);
-uint16_t readBigEndian16(char * start);
-ofColor readRGB(char * start);
-ofColor readCMYK(char * start);
-
 /// Construct an empty ofxASE instance.
 ofxASE::ofxASE(){}
 
@@ -46,7 +40,7 @@ bool ofxASE::load(const std::filesystem::path& filepath){
         
         //read group name
         uint32_t nameByteLength = readBigEndian32(&buf[head + 2]);
-        namedColorGroup.name = nameByteLength != 1 ? string(&buf[head + 8], nameByteLength) : "";
+        namedColorGroup.name = readBigEndian16String(&buf[head + 8], nameByteLength);
 
         head += 6 + (nameByteLength);
         
@@ -56,7 +50,7 @@ bool ofxASE::load(const std::filesystem::path& filepath){
             
             uint32_t colorBlockByteLength = readBigEndian32(&buf[head + 2]);
             uint16_t colorNameLength = readBigEndian16(&buf[head + 6]);
-            string colorName = colorNameLength != 1 ? string(&buf[head + 8], colorNameLength) : "";
+            string colorName = readBigEndian16String(&buf[head + 8], colorNameLength);
             namedColor.name = colorName;
             
             int colorHead = head + 8 + (colorNameLength * 2);
@@ -96,7 +90,7 @@ void ofxASE::clear(){
 
 // Utils
 
-uint32_t readBigEndian32(char * start){
+uint32_t ofxASE::readBigEndian32(char * start){
     uint32_t res;
     memcpy(&res, start, sizeof(uint32_t));
     
@@ -111,13 +105,13 @@ uint32_t readBigEndian32(char * start){
     return res;
 }
 
-Float32 readBigEndianFloat32(char * start){
+Float32 ofxASE::readBigEndianFloat32(char * start){
     uint32_t bytes = readBigEndian32(start);
     Float32 res = *((Float32 *)&bytes);
     return res;
 }
 
-uint16_t readBigEndian16(char * start){
+uint16_t ofxASE::readBigEndian16(char * start){
     uint16_t res;
     memcpy(&res, start, sizeof(uint16_t));
     
@@ -131,13 +125,13 @@ uint16_t readBigEndian16(char * start){
     return res;
 }
 
-ofColor readRGB(char * start){
+ofColor ofxASE::readRGB(char * start){
     return ofColor(readBigEndianFloat32(start + 0) * 255,
                    readBigEndianFloat32(start + 4) * 255,
                    readBigEndianFloat32(start + 8)* 255);
 }
 
-ofColor readCMYK(char * start){
+ofColor ofxASE::readCMYK(char * start){
     Float32 C = readBigEndianFloat32(start + 0);
     Float32 M = readBigEndianFloat32(start + 4);
     Float32 Y = readBigEndianFloat32(start + 8);
@@ -146,6 +140,22 @@ ofColor readCMYK(char * start){
     return ofColor(255 * (1.0 - C) * (1.0 - K),
                    255 * (1.0 - M) * (1.0 - K),
                    255 * (1.0 - Y) * (1.0 - K));
+}
+
+basic_string<char> ofxASE::readBigEndian16String(char * start, uint16_t length){
+    char16_t wideString[length];
+    memcpy(&wideString, start, length * sizeof(char16_t));
+    
+    #ifdef TARGET_LITTLE_ENDIAN // Switch endianness
+    for(int i = 0; i<length; i++){
+        char16_t c = wideString[i];
+        wideString[i] = (((c & 0x00FF) << 8) |
+                        ((c & 0xFF00) >> 8));
+    }
+    #endif
+    
+    std::string converted = stringConversion.to_bytes(wideString);
+    return converted;
 }
 
 //TODO: Look into the trailing ones on some of these from metal.ase...

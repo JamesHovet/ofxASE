@@ -11,13 +11,14 @@
 
 #include "ofMain.h"
 #include "ofFileUtils.h" //needed for ofBuffer
+#include <codecvt> //converts UTF16 text encoding to UTF8, which has better support in openFrameworks
 
 
 class ofxASE {
 public:
     struct NamedColor {
         ofColor color;
-        string name;
+        string name; //utf8
         
         operator ofColor() const {return color;}
     };
@@ -27,7 +28,6 @@ public:
         std::vector<NamedColor> namedColors;
         
         inline const std::vector<NamedColor> getColors() const {return namedColors;}
-        
     };
     
     ofxASE();
@@ -43,7 +43,15 @@ private:
     std::vector<NamedColorGroup> namedColorGroups;
     std::vector<NamedColor> allColors;
     
-
+    std::wstring_convert<std::codecvt_utf8_utf16<char16_t, 0xFFFF, std::little_endian>,char16_t> stringConversion;
+    
+    //Utils
+    uint32_t readBigEndian32(char * start);
+    Float32 readBigEndianFloat32(char * start);
+    uint16_t readBigEndian16(char * start);
+    ofColor readRGB(char * start);
+    ofColor readCMYK(char * start);
+    basic_string<char> readBigEndian16String(char * start, uint16_t length);
     
 };
 
