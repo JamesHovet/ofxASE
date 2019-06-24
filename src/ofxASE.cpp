@@ -46,7 +46,7 @@ bool ofxASE::load(const std::filesystem::path& filepath){
         
         //read group name
         uint32_t nameByteLength = readBigEndian32(&buf[head + 2]);
-        namedColorGroup.name = string(&buf[head + 8], nameByteLength);
+        namedColorGroup.name = nameByteLength != 1 ? string(&buf[head + 8], nameByteLength) : "";
 
         head += 6 + (nameByteLength);
         
@@ -56,7 +56,7 @@ bool ofxASE::load(const std::filesystem::path& filepath){
             
             uint32_t colorBlockByteLength = readBigEndian32(&buf[head + 2]);
             uint16_t colorNameLength = readBigEndian16(&buf[head + 6]);
-            string colorName = string(&buf[head + 8], colorNameLength * 2);
+            string colorName = colorNameLength != 1 ? string(&buf[head + 8], colorNameLength) : "";
             namedColor.name = colorName;
             
             int colorHead = head + 8 + (colorNameLength * 2);

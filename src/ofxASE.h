@@ -25,6 +25,9 @@ public:
     struct NamedColorGroup {
         string name;
         std::vector<NamedColor> namedColors;
+        
+        inline const std::vector<NamedColor> getColors() const {return namedColors;}
+        
     };
     
     ofxASE();

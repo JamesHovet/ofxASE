@@ -2,16 +2,16 @@
 
 #include "ofMain.h"
 #include "ofxASE.h"
-#include "ofFileUtils.h" 
+#include "ofFileUtils.h"
 
 
 class ofApp : public ofBaseApp{
-
+    
 public:
     void setup();
     void update();
     void draw();
-
+    
     void keyPressed(int key);
     void keyReleased(int key);
     void mouseMoved(int x, int y );
@@ -24,6 +24,8 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
-    ofxASE swatch;
+    std::vector<ofxASE> swatches;
+    int swatchIndex;
+    int groupIndex;
     
 };
