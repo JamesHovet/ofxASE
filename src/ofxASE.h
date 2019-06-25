@@ -18,24 +18,29 @@ class ofxASE {
 public:
     struct NamedColor {
         ofColor color;
-        string name; //utf8
+        string name; /// utf8
         
         operator ofColor() const {return color;}
     };
     
     struct NamedColorGroup {
-        string name;
+        string name; /// utf8
         std::vector<NamedColor> namedColors;
         
         inline const std::vector<NamedColor> getColors() const {return namedColors;}
     };
     
     ofxASE();
+    /// Construct an ofxASE instance and load in a single .ase swatch file.
     ofxASE(std::filesystem::path& filepath);
     
+    /// Load an ASE file into the ofxASE instance. Multiple files can be loaded into the same instance. Assuses target system uses IEEE 754 floating point values. Returns false if unsuccessful.
     bool load(const std::filesystem::path& filepath);
+    /// Clear the ofxASE instance of all colors and color groups
     void clear();
+    /// Return a std::vector of all color groups in this ofxASE instance
     std::vector<NamedColorGroup> getGroups() const {return namedColorGroups;}
+    /// Return a std::vector of every color in this ofxASE instance
     std::vector<NamedColor> getAllColors() const {return allColors;}
     
 private:
@@ -43,15 +48,13 @@ private:
     std::vector<NamedColorGroup> namedColorGroups;
     std::vector<NamedColor> allColors;
     
-    std::wstring_convert<std::codecvt_utf8_utf16<char16_t, 0xFFFF, std::little_endian>,char16_t> stringConversion;
     
-    //Utils
-    uint32_t readBigEndian32(char * start);
-    Float32 readBigEndianFloat32(char * start);
-    uint16_t readBigEndian16(char * start);
-    ofColor readRGB(char * start);
-    ofColor readCMYK(char * start);
-    basic_string<char> readBigEndian16String(char * start, uint16_t length);
+    static uint32_t readBigEndian32(char * start);
+    static Float32 readBigEndianFloat32(char * start);
+    static uint16_t readBigEndian16(char * start);
+    static ofColor readRGB(char * start);
+    static ofColor readCMYK(char * start);
+    static basic_string<char> readBigEndian16String(char * start, uint16_t length);
     
 };
 

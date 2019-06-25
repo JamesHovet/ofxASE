@@ -7,19 +7,16 @@
 
 #include "ofxASE.h"
 
-/// Construct an empty ofxASE instance.
 ofxASE::ofxASE(){}
 
-/// Construct an ofxASE instance with a single .ase swatch file.
 ofxASE::ofxASE(std::filesystem::path& filepath){
     load(filepath);
 }
 
-/// Load an ASE file into the ofxASE instance. Multiple files can be loaded into the same instance. Assuses target system uses IEEE 754 floating point values
 bool ofxASE::load(const std::filesystem::path& filepath){
     ofBuffer buffer = ofBufferFromFile(filepath);
     
-    if(!buffer.size()){
+    if(buffer.size() == 0){
         string absoluteFilePath = ofFilePath::getAbsolutePath(filepath, true);
         ofLogError("ofxASE") << "Couldn't load ASE file at: \"" << absoluteFilePath << "\"";
         return false;
@@ -32,10 +29,10 @@ bool ofxASE::load(const std::filesystem::path& filepath){
         return false;
     }
     
-    bool didCompleteWithoutError = true;
+    bool didLoadWithoutError = true;
     int head = 12;
     
-    while(buf[head] == '\xc0' && buf[head + 1] == '\x01'){
+    while(buf[head] == '\xc0' && buf[head + 1] == '\x01'){ // All group entries begin with 0xC001
         NamedColorGroup namedColorGroup;
         
         //read group name
@@ -45,16 +42,14 @@ bool ofxASE::load(const std::filesystem::path& filepath){
         head += 6 + (nameByteLength);
         
         //read each color block
-        while (buf[head + 1] == '\x01') {
+        while (buf[head + 1] == '\x01') { // All color entries begin with 0x0001
             NamedColor namedColor;
             
             uint32_t colorBlockByteLength = readBigEndian32(&buf[head + 2]);
             uint16_t colorNameLength = readBigEndian16(&buf[head + 6]);
-            string colorName = readBigEndian16String(&buf[head + 8], colorNameLength);
-            namedColor.name = colorName;
+            namedColor.name = readBigEndian16String(&buf[head + 8], colorNameLength);
             
             int colorHead = head + 8 + (colorNameLength * 2);
-            
             switch (buf[colorHead]){
                 case 'R': //RGB
                     namedColor.color = readRGB(&buf[colorHead + 4]);
@@ -64,23 +59,24 @@ bool ofxASE::load(const std::filesystem::path& filepath){
                     break;
                 case 'L': //LAB
                     ofLogError() << "The LAB color space is not supported";
-                    didCompleteWithoutError = false;
+                    didLoadWithoutError = false;
                     break;
                 case 'G': //Greyscale
                     namedColor.color = ofColor(readBigEndianFloat32(&buf[colorHead + 4]) * 256);
                     break;
             }
             
-            allColors.push_back(namedColor);
             namedColorGroup.namedColors.push_back(namedColor);
+            allColors.push_back(namedColor);
             
             head += 6 + (colorBlockByteLength);
         }
-        head += 6;
-        
         namedColorGroups.push_back(namedColorGroup);
+        
+        head += 6;
     }
-    return didCompleteWithoutError;
+    
+    return didLoadWithoutError;
 }
 
 void ofxASE::clear(){
@@ -88,8 +84,7 @@ void ofxASE::clear(){
     allColors.clear();
 }
 
-// Utils
-
+//-Utils--------------------------------------------------------
 uint32_t ofxASE::readBigEndian32(char * start){
     uint32_t res;
     memcpy(&res, start, sizeof(uint32_t));
@@ -154,9 +149,7 @@ basic_string<char> ofxASE::readBigEndian16String(char * start, uint16_t length){
     }
     #endif
     
+    static std::wstring_convert<std::codecvt_utf8_utf16<char16_t, 0xFFFF, std::little_endian>,char16_t> stringConversion;
     std::string converted = stringConversion.to_bytes(wideString);
     return converted;
 }
-
-//TODO: Look into the trailing ones on some of these from metal.ase...
-
